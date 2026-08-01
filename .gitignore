@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Generated data — do not commit
+data/input_docs/*
+data/processed_docs/*
+data/chroma_db/*
+data/models/*
+data/labels/*
+data/notices_metadata.jsonl
+data/processed_log.json
+data/bm25_docs.json
+!data/input_docs/.gitkeep
+!data/processed_docs/.gitkeep

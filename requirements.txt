@@ -1,0 +1,23 @@
+google-genai
+pillow
+pydantic
+python-dotenv
+pymupdf 
+chromadb
+langchain==0.2.0
+langchain-community==0.2.0
+langchain-core==0.2.0
+langchain-text-splitters
+langchain-huggingface
+chromadb
+rank_bm25
+
+# Module 1 — classifier
+scikit-learn
+pandas
+joblib
+matplotlib
+
+# Module 2 — dashboard (added next)
+# seaborn
+# streamlit
