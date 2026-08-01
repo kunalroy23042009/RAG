@@ -99,3 +99,35 @@ def generate_augmented_response(user_query: str, hybrid_retriever: EnsembleRetri
     )
 
     return response.text
+def generate_augmented_response_stream(user_query: str, hybrid_retriever: EnsembleRetriever):
+    """
+    Same as generate_augmented_response, but yields the answer word-by-word
+    as it's generated, instead of returning the full text at once. Built
+    for st.write_stream() in the chat UI.
+    """
+    retrieved_documents = hybrid_retriever.invoke(user_query)
+    aggregated_context = "\n\n---\n\n".join(doc.page_content for doc in retrieved_documents)
+
+    generation_prompt = f"""
+    You are an administrative intelligence assistant.
+
+    Answer ONLY from the provided context.
+    If not found, say: "Information regarding this query is not available."
+
+    Context:
+    {aggregated_context}
+
+    Query: {user_query}
+    """
+
+    response_stream = client.models.generate_content_stream(
+        model="gemini-2.5-flash",
+        contents=generation_prompt,
+        config=types.GenerateContentConfig(temperature=0.2),
+    )
+
+    for chunk in response_stream:
+        if chunk.text:
+            for word in chunk.text.split(" "):
+                if word:
+                    yield word + " "

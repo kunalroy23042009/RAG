@@ -19,5 +19,5 @@ joblib
 matplotlib
 
 # Module 2 — dashboard (added next)
-# seaborn
-# streamlit
+seaborn
+streamlit>=1.31
