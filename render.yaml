@@ -4,4 +4,4 @@
     env: python
     pythonVersion: 3.11
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn api_server:app --host 0.0.0.0 --port 
+    startCommand: python api_server.py
