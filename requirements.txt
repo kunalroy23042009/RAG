@@ -4,9 +4,9 @@ pydantic
 python-dotenv
 pymupdf 
 chromadb
-langchain==0.2.0
-langchain-community==0.2.0
-langchain-core==0.2.0
+langchain
+langchain-community
+langchain-core
 langchain-text-splitters
 langchain-huggingface
 chromadb
@@ -21,3 +21,8 @@ matplotlib
 # Module 2 — dashboard (added next)
 seaborn
 streamlit>=1.31
+
+# API Server
+fastapi
+uvicorn[standard]
+python-multipart

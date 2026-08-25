@@ -45,9 +45,17 @@ def _load_labeled_data() -> pd.DataFrame:
 def train_and_evaluate() -> Pipeline:
     df = _load_labeled_data()
 
+    min_class_count = df["category"].value_counts().min()
+    use_stratify = min_class_count >= 2
+
     X_train, X_test, y_train, y_test = train_test_split(
-        df["text"], df["category"], test_size=0.2, random_state=42, stratify=df["category"]
+        df["text"], df["category"], test_size=0.2, random_state=42,
+        stratify=df["category"] if use_stratify else None
     )
+    
+    if not use_stratify:
+        print(f"Warning: Some classes have <2 samples (min={min_class_count}). "
+              "Disabling stratification for train/test split.")
 
     pipeline = Pipeline([
         ("tfidf", TfidfVectorizer(max_features=3000, ngram_range=(1, 2))),

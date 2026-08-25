@@ -71,3 +71,108 @@ later.
 ## Module 2 — dashboard
 
 Not built yet — coming next, on top of the same `notice_store.py` data.
+
+## REST API Server
+
+A FastAPI-based REST API is available for programmatic access to the RAG system. The API provides OpenAI/Groq-style endpoints with streaming support.
+
+### Starting the API Server
+
+```bash
+# Install dependencies (if not already done)
+pip install -r requirements.txt
+
+# Start the API server
+python api_server.py
+```
+
+The server will start on `http://localhost:8000` by default. You can change the host and port via environment variables:
+
+```bash
+export API_HOST=0.0.0.0
+export API_PORT=8000
+python api_server.py
+```
+
+### API Endpoints
+
+#### Health Check
+```bash
+GET /health
+```
+Returns API status and model information.
+
+#### Query Notices (Non-streaming)
+```bash
+POST /v1/query
+Content-Type: application/json
+
+{
+  "query": "What are the upcoming exam dates?",
+  "stream": false
+}
+```
+Returns a complete response with sources.
+
+#### Query Notices (Streaming)
+```bash
+POST /v1/query/stream
+Content-Type: application/json
+
+{
+  "query": "What events are scheduled this month?",
+  "stream": true
+}
+```
+Streams the response word-by-word as it's generated.
+
+#### Upload Document
+```bash
+POST /v1/documents/upload
+Content-Type: multipart/form-data
+
+file: <document file>
+```
+Uploads a document (image or PDF) for processing and adds it to the RAG system.
+Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.pdf`
+
+#### Get Categories
+```bash
+GET /v1/categories
+```
+Returns available notice categories.
+
+### Example Usage
+
+See `api_client_example.py` for complete examples of how to interact with the API:
+
+```bash
+python api_client_example.py
+```
+
+Or use curl:
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Query (non-streaming)
+curl -X POST http://localhost:8000/v1/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What are the upcoming exam dates?"}'
+
+# Upload document
+curl -X POST http://localhost:8000/v1/documents/upload \
+  -F "file=@notice.pdf"
+```
+
+### Authentication
+
+Currently, the API is open access (no authentication). API key authentication will be added in a future update.
+
+### Deployment
+
+The API runs locally by default. For cloud deployment:
+- The API can be deployed to any cloud provider (AWS, GCP, Render, etc.)
+- Ensure environment variables (GOOGLE_API_KEY, API_HOST, API_PORT) are configured
+- The data directory (`data/`) should be persisted or mounted as a volume

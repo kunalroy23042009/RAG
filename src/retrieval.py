@@ -5,7 +5,7 @@ generation. Converted from notebook cells 8, 14 and 15 — logic unchanged.
 import json
 import os
 
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 from langchain.retrievers import BM25Retriever, EnsembleRetriever
 
 from config import LOG_PATH, BM25_DOCS_PATH, CHROMA_PATH, GOOGLE_API_KEY

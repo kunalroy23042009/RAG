@@ -41,5 +41,9 @@ CONFUSION_MATRIX_PATH = os.path.join(MODELS_DIR, "confusion_matrix.png")
 
 CATEGORIES = ["Exam", "Holiday", "Event", "Circular", "Admission", "Other"]
 
+# --- API Server Configuration -----------------------------------------------
+API_HOST = os.environ.get("API_HOST", "0.0.0.0")
+API_PORT = int(os.environ.get("API_PORT", "8000"))
+
 for _path in (INPUT_PATH, PROCESSED_PATH, CHROMA_PATH, LABELS_DIR, MODELS_DIR):
     os.makedirs(_path, exist_ok=True)
