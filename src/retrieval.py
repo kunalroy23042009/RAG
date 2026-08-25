@@ -6,7 +6,7 @@ import json
 import os
 
 from langchain_community.vectorstores import Chroma
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever, EnsembleRetriever
 
 from config import LOG_PATH, BM25_DOCS_PATH, CHROMA_PATH, GOOGLE_API_KEY
 from google.genai import types
