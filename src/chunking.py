@@ -12,8 +12,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 from src.extraction import AcademicNoticeSchema
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from typing import List, Dict
 
 def chunk_document_with_metadata(document_pages: List[Dict], chunk_size: int = 800, chunk_overlap: int = 150) -> List[Dict]:
     """
