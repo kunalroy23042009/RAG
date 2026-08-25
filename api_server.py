@@ -206,11 +206,14 @@ async def get_categories():
 
 if __name__ == "__main__":
     import uvicorn
-    from config import API_HOST, API_PORT
+    import os
+    from config import API_HOST
+    
+    port = int(os.environ.get("PORT", os.environ.get("API_PORT", "8000")))
     
     uvicorn.run(
         "api_server:app",
         host=API_HOST,
-        port=API_PORT,
-        reload=True
+        port=port,
+        reload=False
     )
