@@ -6,7 +6,7 @@ now accepts an optional `category` (the ML classifier's prediction) and
 injects it into the chunk metadata, so retrieval can later be filtered by
 category. If you don't pass a category, behaviour is identical to before.
 """
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document

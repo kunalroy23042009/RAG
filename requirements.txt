@@ -2,14 +2,13 @@ google-genai
 pillow
 pydantic
 python-dotenv
-pymupdf 
+pymupdf
 chromadb
 langchain
 langchain-community
 langchain-core
 langchain-text-splitters
 langchain-huggingface
-chromadb
 rank_bm25
 
 # Module 1 — classifier

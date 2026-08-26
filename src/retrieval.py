@@ -11,21 +11,6 @@ from langchain_community.retrievers import BM25Retriever
 from config import LOG_PATH, BM25_DOCS_PATH, CHROMA_PATH, GOOGLE_API_KEY
 from google.genai import types
 from src.extraction import client
-def retrieve_relevant_chunks(self, query: str, target_document: str = None, top_k: int = 5):
-    """
-    Retrieves chunks based on semantic similarity, with optional metadata filtering.
-    """
-    where_filter = {}
-    if target_document:
-        where_filter = {"source_document": target_document}
-
-    results = self.collection.query(
-        query_texts=[query],
-        n_results=top_k,
-        where=where_filter if where_filter else None
-    )
-    
-    return results
 
 def load_processed_log():
     if os.path.exists(LOG_PATH):
@@ -93,7 +78,7 @@ def generate_augmented_response(user_query: str, hybrid_retriever: EnsembleRetri
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash-lite",
+        model="gemini-2.5-flash",
         contents=generation_prompt,
         config=types.GenerateContentConfig(temperature=0.2),
     )
