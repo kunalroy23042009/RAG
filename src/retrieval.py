@@ -152,15 +152,15 @@ def generate_augmented_response_stream(user_query: str, hybrid_retriever: Ensemb
     {aggregated_context}
 
     Query: {user_query}
-    """
+"""
 
     def generate_augmented_response_stream(user_query: str, hybrid_retriever: EnsembleRetriever):
-    """
-    Same as generate_augmented_response, but yields the answer word-by-word
-    as it's generated, instead of returning the full text at once. Built
-    for st.write_stream() in the chat UI.
-    """
-    retrieved_documents = hybrid_retriever.invoke(user_query)
+        """
+        Same as generate_augmented_response, but yields the answer word-by-word
+        as it's generated, instead of returning the full text at once. Built
+        for st.write_stream() in the chat UI.
+        """
+        retrieved_documents = hybrid_retriever.invoke(user_query)
     aggregated_context = "\n\n---\n\n".join(doc.page_content for doc in retrieved_documents)
 
     generation_prompt = f"""
