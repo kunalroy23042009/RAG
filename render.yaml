@@ -2,9 +2,11 @@
   - type: web
     name: rag-api
     env: python
-    pythonVersion: 3.11
-    buildCommand: pip install -r requirements.txt
+    pythonVersion: "3.11"
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python api_server.py
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
@@ -14,15 +16,27 @@
         value: "8000"
       - key: GOOGLE_API_KEY
         sync: false
+      - key: RAG_BASE_PATH
+        value: "/opt/render/project/src/data"
 
   - type: web
     name: rag-chat
     env: python
-    pythonVersion: 3.11
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    pythonVersion: "3.11"
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableXsrfProtection false
+    healthCheckPath: /
+    autoDeploy: true
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: GOOGLE_API_KEY
         sync: false
+      - key: RAG_BASE_PATH
+        value: "/opt/render/project/src/data"
+
+# Optional: Add persistent disk for ChromaDB (uncomment if you need persistence across deploys)
+# disks:
+#   - name: rag-data
+#     mountPath: /opt/render/project/src/data
+#     sizeGB: 1
