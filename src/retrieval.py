@@ -44,7 +44,20 @@ def configure_bm25_only_retriever(documents):
     save_bm25_docs(all_texts)
 
     if not all_texts:
-        return None
+        # Return a dummy retriever that returns empty results
+        from langchain_core.retrievers import BaseRetriever
+        from langchain_core.documents import Document
+        from typing import List
+        from pydantic import Field
+        
+        class EmptyRetriever(BaseRetriever):
+            """Retriever that returns empty results."""
+            def _get_relevant_documents(self, query: str) -> List[Document]:
+                return []
+            async def _aget_relevant_documents(self, query: str) -> List[Document]:
+                return []
+        
+        return EmptyRetriever()
 
     bm25_retriever = BM25Retriever.from_texts([doc["content"] for doc in all_texts])
     bm25_retriever.k = 4
