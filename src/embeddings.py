@@ -7,11 +7,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 def initialize_multilingual_embedding_model() -> HuggingFaceEmbeddings:
     """
-    Initializes the BAAI BGE-M3 multilingual embedding model via HuggingFace.
-    Selected for Hindi-English code-mixed text handling and 8192 token context.
+    Initializes a lightweight multilingual embedding model via HuggingFace.
+    Uses sentence-transformers/all-MiniLM-L6-v2 (~80MB) for fast downloads
+    and low memory usage on free tier hosting.
     """
-    model_name = "BAAI/bge-m3"
-    model_kwargs = {"device": "cpu"}  # switch to "cuda" if a GPU is available
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    model_kwargs = {"device": "cpu"}
     encode_kwargs = {"normalize_embeddings": True}
 
     return HuggingFaceEmbeddings(
