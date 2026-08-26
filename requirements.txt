@@ -3,12 +3,12 @@ pillow
 pydantic
 python-dotenv
 pymupdf
-chromadb
-langchain
-langchain-community
-langchain-core
-langchain-text-splitters
-langchain-huggingface
+chromadb==1.1.1
+langchain==0.2.0
+langchain-community==0.2.0
+langchain-core==0.2.0
+langchain-text-splitters==0.2.1
+langchain-huggingface==0.0.3
 rank_bm25
 
 # Module 1 — classifier
