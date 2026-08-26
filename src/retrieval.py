@@ -114,11 +114,21 @@ def generate_augmented_response(user_query: str, hybrid_retriever: EnsembleRetri
     Query: {user_query}
     """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=generation_prompt,
-        config=types.GenerateContentConfig(temperature=0.2),
-    )
+    import concurrent.futures
+
+    def call_llm_with_timeout(prompt, timeout=30):
+        """Call LLM with timeout."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                lambda: client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(temperature=0.2),
+                )
+            )
+            return future.result(timeout=timeout)
+
+    response = call_llm_with_timeout(generation_prompt, timeout=30)
 
     return response.text
 def generate_augmented_response_stream(user_query: str, hybrid_retriever: EnsembleRetriever):
@@ -144,13 +154,57 @@ def generate_augmented_response_stream(user_query: str, hybrid_retriever: Ensemb
     Query: {user_query}
     """
 
-    response_stream = client.models.generate_content_stream(
+    def generate_augmented_response_stream(user_query: str, hybrid_retriever: EnsembleRetriever):
+    """
+    Same as generate_augmented_response, but yields the answer word-by-word
+    as it's generated, instead of returning the full text at once. Built
+    for st.write_stream() in the chat UI.
+    """
+    retrieved_documents = hybrid_retriever.invoke(user_query)
+    aggregated_context = "\n\n---\n\n".join(doc.page_content for doc in retrieved_documents)
+
+    generation_prompt = f"""
+    You are an administrative intelligence assistant for academic notices.
+
+    Use the provided context to answer questions about notices, exams, holidays, events, circulars, and admissions.
+    If the question is about information in the context, answer from the context.
+    If the question is a general conversational query (greetings, thanks, how are you, etc.) or unrelated to notices, respond naturally and helpfully.
+    If the question is about notices but the information is not in the context, say: "Information regarding this query is not available in the processed notices."
+
+    Context:
+    {aggregated_context}
+
+    Query: {user_query}
+    """
+
+    def stream_with_timeout():
+        response_stream = client.models.generate_content_stream(
+            model="gemini-2.5-flash",
+            contents=generation_prompt,
+            config=types.GenerateContentConfig(temperature=0.2),
+        )
+        for chunk in response_stream:
+            if chunk.text:
+                for word in chunk.text.split(" "):
+                    if word:
+                        yield word + " "
+
+    # Run with timeout
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(lambda: list(stream_with_timeout()))
+        try:
+            for word in future.result(timeout=30):
+                yield word
+        except concurrent.futures.TimeoutError:
+            yield " [Response timed out]"
+
+    # Fallback to simple streaming if timeout doesn't work
+    for chunk in client.models.generate_content_stream(
         model="gemini-2.5-flash",
         contents=generation_prompt,
         config=types.GenerateContentConfig(temperature=0.2),
-    )
-
-    for chunk in response_stream:
+    ):
         if chunk.text:
             for word in chunk.text.split(" "):
                 if word:
