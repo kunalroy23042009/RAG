@@ -77,27 +77,12 @@ def get_hybrid_retriever():
 
 @app.on_event("startup")
 async def startup_event():
-    """Pre-load model in background to avoid cold-start latency on first query."""
-    import threading
+    """Fast startup - no pre-loading to avoid memory issues on free tier."""
     import logging
     
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
-    
-    def preload():
-        try:
-            logger.info("Pre-loading embedding model...")
-            get_embedding_model()
-            logger.info("Pre-loading hybrid retriever...")
-            get_hybrid_retriever()
-            logger.info("Model pre-load complete")
-        except MemoryError:
-            logger.error("Out of memory during model pre-load - will retry on first query")
-        except Exception as e:
-            logger.error(f"Model pre-load failed: {e}")
-    
-    thread = threading.Thread(target=preload, daemon=True)
-    thread.start()
+    logger.info("Starting up - models will load on first query (lazy loading)")
 
 
 # Pydantic models for request/response
