@@ -22,6 +22,7 @@ from src.notice_store import save_notice_metadata
 from src.chunking import create_intelligent_context_chunks
 from src.retrieval import (
     configure_hybrid_retrieval_system,
+    configure_bm25_only_retriever,
     generate_augmented_response,
     generate_augmented_response_stream,
 )
@@ -42,36 +43,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global embedding model (cached for performance)
-_embedding_model = None
+# Global retriever (cached for performance)
 _hybrid_retriever = None
-_model_loading = False
-
-
-def get_embedding_model():
-    """Get or initialize the embedding model (cached)."""
-    global _embedding_model
-    if _embedding_model is None:
-        from src.embeddings import initialize_multilingual_embedding_model
-        _embedding_model = initialize_multilingual_embedding_model()
-    return _embedding_model
 
 
 def get_hybrid_retriever():
-    """Get or initialize the hybrid retriever (cached). Falls back to BM25-only on memory error."""
+    """Get or initialize the retriever (cached). Uses BM25-only to avoid memory issues on free tier."""
     global _hybrid_retriever
     if _hybrid_retriever is None:
-        try:
-            embeddings = get_embedding_model()
-            _hybrid_retriever = configure_hybrid_retrieval_system([], embeddings)
-        except MemoryError:
-            # Fallback to BM25-only
-            from src.retrieval import configure_bm25_only_retriever
-            _hybrid_retriever = configure_bm25_only_retriever([])
-        except Exception as e:
-            # Fallback to BM25-only on any error
-            from src.retrieval import configure_bm25_only_retriever
-            _hybrid_retriever = configure_bm25_only_retriever([])
+        from src.retrieval import configure_bm25_only_retriever
+        _hybrid_retriever = configure_bm25_only_retriever([])
     return _hybrid_retriever
 
 
