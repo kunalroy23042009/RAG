@@ -47,13 +47,91 @@ app.add_middleware(
 _hybrid_retriever = None
 
 
-def get_hybrid_retriever():
-    """Get or initialize the retriever (cached). Uses BM25-only to avoid memory issues on free tier."""
-    global _hybrid_retriever
-    if _hybrid_retriever is None:
-        from src.retrieval import configure_bm25_only_retriever
-        _hybrid_retriever = configure_bm25_only_retriever([])
-    return _hybrid_retriever
+def is_conversational_query(query: str) -> bool:
+    """Check if query is conversational (greetings, thanks, etc.) - skip retriever for these."""
+    conversational_keywords = [
+        "hi", "hello", "hey", "thanks", "thank you", "thx", "bye", "goodbye",
+        "how are you", "what's up", "whats up", "whatsup", "good morning",
+        "good evening", "good afternoon", "nice", "cool", "ok", "okay",
+        "great", "awesome", "wow", "oh", "hmm", "yeah", "yes", "no",
+        "maybe", "sure", "why not", "of course", "sure thing"
+    ]
+    query_lower = query.lower().strip()
+    return any(keyword in query_lower for keyword in conversational_keywords)
+
+
+def generate_simple_response(query: str) -> str:
+    """Generate simple conversational response without retriever."""
+    from src.retrieval import client
+    from google.genai import types
+    
+    prompt = f"""
+    You are a helpful assistant. Respond naturally to this conversational query:
+    Query: {query}
+    """
+    import concurrent.futures
+    
+    def call_llm():
+        return client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.3),
+        )
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(call_llm)
+        response = future.result(timeout=30)
+    
+    return response.text
+
+
+async def generate_simple_response_stream(query: str):
+    """Generate simple conversational stream without retriever."""
+    from src.retrieval import client
+    from google.genai import types
+    
+    prompt = f"""
+    You are a helpful assistant. Respond naturally to this conversational query:
+    Query: {query}
+    """
+    
+    def stream_llm():
+        response_stream = client.models.generate_content_stream(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.3),
+        )
+        for chunk in response_stream:
+            if chunk.text:
+                for word in chunk.text.split(" "):
+                    if word:
+                        yield word + " "
+    
+    def stream_with_timeout():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: list(stream_llm()))
+            try:
+                for word in future.result(timeout=30):
+                    yield word
+            except concurrent.futures.TimeoutError:
+                yield " [Response timed out]"
+    
+    for word in stream_with_timeout():
+        yield word
+
+
+def is_conversational_query(query: str) -> bool:
+    """Check if query is conversational (greetings, thanks, etc.) - skip retriever for these."""
+    conversational_keywords = [
+        "hi", "hello", "hey", "thanks", "thank you", "thx", "bye", "goodbye",
+        "how are you", "what's up", "whats up", "whatsup", "good morning",
+        "good evening", "good afternoon", "nice", "cool", "ok", "okay",
+        "great", "awesome", "wow", "oh", "hmm", "yeah", "yes", "no",
+        "maybe", "sure", "why not", "of course", "sure thing"
+    ]
+    query_lower = query.lower().strip()
+    return any(keyword in query_lower for keyword in conversational_keywords)
 
 
 @app.on_event("startup")
@@ -100,6 +178,11 @@ async def query_notices(request: QueryRequest):
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     
     try:
+        # Skip retriever for conversational queries to save memory
+        if is_conversational_query(request.query):
+            response = generate_simple_response(request.query)
+            return QueryResponse(response=response, sources=[])
+        
         retriever = get_hybrid_retriever()
         response = generate_augmented_response(request.query, retriever)
         
@@ -131,6 +214,14 @@ async def query_notices_stream(request: QueryRequest):
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     
     try:
+        # Skip retriever for conversational queries to save memory
+        if is_conversational_query(request.query):
+            async def generate():
+                async for word in generate_simple_response_stream(request.query):
+                    yield word
+            
+            return StreamingResponse(generate(), media_type="text/plain")
+        
         retriever = get_hybrid_retriever()
         
         async def generate():
