@@ -58,11 +58,20 @@ def get_embedding_model():
 
 
 def get_hybrid_retriever():
-    """Get or initialize the hybrid retriever (cached)."""
+    """Get or initialize the hybrid retriever (cached). Falls back to BM25-only on memory error."""
     global _hybrid_retriever
     if _hybrid_retriever is None:
-        embeddings = get_embedding_model()
-        _hybrid_retriever = configure_hybrid_retrieval_system([], embeddings)
+        try:
+            embeddings = get_embedding_model()
+            _hybrid_retriever = configure_hybrid_retrieval_system([], embeddings)
+        except MemoryError:
+            # Fallback to BM25-only
+            from src.retrieval import configure_bm25_only_retriever
+            _hybrid_retriever = configure_bm25_only_retriever([])
+        except Exception as e:
+            # Fallback to BM25-only on any error
+            from src.retrieval import configure_bm25_only_retriever
+            _hybrid_retriever = configure_bm25_only_retriever([])
     return _hybrid_retriever
 
 
