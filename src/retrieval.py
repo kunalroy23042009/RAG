@@ -66,10 +66,12 @@ def generate_augmented_response(user_query: str, hybrid_retriever: EnsembleRetri
     aggregated_context = "\n\n---\n\n".join(doc.page_content for doc in retrieved_documents)
 
     generation_prompt = f"""
-    You are an administrative intelligence assistant.
+    You are an administrative intelligence assistant for academic notices.
 
-    Answer ONLY from the provided context.
-    If not found, say: "Information regarding this query is not available."
+    Use the provided context to answer questions about notices, exams, holidays, events, circulars, and admissions.
+    If the question is about information in the context, answer from the context.
+    If the question is a general conversational query (greetings, thanks, how are you, etc.) or unrelated to notices, respond naturally and helpfully.
+    If the question is about notices but the information is not in the context, say: "Information regarding this query is not available in the processed notices."
 
     Context:
     {aggregated_context}
@@ -94,10 +96,12 @@ def generate_augmented_response_stream(user_query: str, hybrid_retriever: Ensemb
     aggregated_context = "\n\n---\n\n".join(doc.page_content for doc in retrieved_documents)
 
     generation_prompt = f"""
-    You are an administrative intelligence assistant.
+    You are an administrative intelligence assistant for academic notices.
 
-    Answer ONLY from the provided context.
-    If not found, say: "Information regarding this query is not available."
+    Use the provided context to answer questions about notices, exams, holidays, events, circulars, and admissions.
+    If the question is about information in the context, answer from the context.
+    If the question is a general conversational query (greetings, thanks, how are you, etc.) or unrelated to notices, respond naturally and helpfully.
+    If the question is about notices but the information is not in the context, say: "Information regarding this query is not available in the processed notices."
 
     Context:
     {aggregated_context}
