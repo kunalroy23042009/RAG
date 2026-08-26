@@ -36,29 +36,51 @@ def save_bm25_docs(docs):
         json.dump(docs, f, indent=2)
 
 
-def configure_hybrid_retrieval_system(documents, embeddings):
-    vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
-
-    if documents:
-        vector_store.add_documents(documents)
-
-    semantic_retriever = vector_store.as_retriever(search_kwargs={"k": 4})
-
+def configure_bm25_only_retriever(documents):
+    """Create a BM25-only retriever (no embedding model needed)."""
     existing_docs = load_bm25_docs()
     new_docs = [{"content": doc.page_content, "metadata": doc.metadata} for doc in documents]
     all_texts = existing_docs + new_docs
     save_bm25_docs(all_texts)
 
-    retrievers_to_ensemble = [semantic_retriever]
-    weights = [1.0]
+    if not all_texts:
+        return None
 
-    if all_texts:
-        bm25_retriever = BM25Retriever.from_texts([doc["content"] for doc in all_texts])
-        bm25_retriever.k = 4
-        retrievers_to_ensemble.append(bm25_retriever)
-        weights = [0.6, 0.4]
+    bm25_retriever = BM25Retriever.from_texts([doc["content"] for doc in all_texts])
+    bm25_retriever.k = 4
+    return bm25_retriever
 
-    return EnsembleRetriever(retrievers=retrievers_to_ensemble, weights=weights)
+
+def configure_hybrid_retrieval_system(documents, embeddings):
+    try:
+        vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
+
+        if documents:
+            vector_store.add_documents(documents)
+
+        semantic_retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+
+        existing_docs = load_bm25_docs()
+        new_docs = [{"content": doc.page_content, "metadata": doc.metadata} for doc in documents]
+        all_texts = existing_docs + new_docs
+        save_bm25_docs(all_texts)
+
+        retrievers_to_ensemble = [semantic_retriever]
+        weights = [1.0]
+
+        if all_texts:
+            bm25_retriever = BM25Retriever.from_texts([doc["content"] for doc in all_texts])
+            bm25_retriever.k = 4
+            retrievers_to_ensemble.append(bm25_retriever)
+            weights = [0.6, 0.4]
+
+        return EnsembleRetriever(retrievers=retrievers_to_ensemble, weights=weights)
+    except MemoryError:
+        # Fallback to BM25-only if memory is low
+        return configure_bm25_only_retriever(documents)
+    except Exception:
+        # Fallback to BM25-only on any error
+        return configure_bm25_only_retriever(documents)
 
 
 def generate_augmented_response(user_query: str, hybrid_retriever: EnsembleRetriever) -> str:
