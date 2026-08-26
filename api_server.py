@@ -20,7 +20,6 @@ from src.extraction import extract_structured_metadata
 from src.classifier.predict import predict_category
 from src.notice_store import save_notice_metadata
 from src.chunking import create_intelligent_context_chunks
-from src.embeddings import initialize_multilingual_embedding_model
 from src.retrieval import (
     configure_hybrid_retrieval_system,
     generate_augmented_response,
@@ -46,12 +45,14 @@ app.add_middleware(
 # Global embedding model (cached for performance)
 _embedding_model = None
 _hybrid_retriever = None
+_model_loading = False
 
 
 def get_embedding_model():
     """Get or initialize the embedding model (cached)."""
     global _embedding_model
     if _embedding_model is None:
+        from src.embeddings import initialize_multilingual_embedding_model
         _embedding_model = initialize_multilingual_embedding_model()
     return _embedding_model
 
@@ -63,6 +64,23 @@ def get_hybrid_retriever():
         embeddings = get_embedding_model()
         _hybrid_retriever = configure_hybrid_retrieval_system([], embeddings)
     return _hybrid_retriever
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Pre-load model in background to avoid cold-start latency on first query."""
+    import asyncio
+    import threading
+    
+    def preload():
+        try:
+            get_embedding_model()
+            get_hybrid_retriever()
+        except Exception:
+            pass  # Fail silently, will retry on first query
+    
+    thread = threading.Thread(target=preload, daemon=True)
+    thread.start()
 
 
 # Pydantic models for request/response
@@ -84,7 +102,7 @@ class HealthResponse(BaseModel):
 # Endpoints
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint - fast, no model loading."""
     return HealthResponse(status="healthy", model="gemini-2.5-flash")
 
 
