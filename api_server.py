@@ -69,15 +69,23 @@ def get_hybrid_retriever():
 @app.on_event("startup")
 async def startup_event():
     """Pre-load model in background to avoid cold-start latency on first query."""
-    import asyncio
     import threading
+    import logging
+    
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
     
     def preload():
         try:
+            logger.info("Pre-loading embedding model...")
             get_embedding_model()
+            logger.info("Pre-loading hybrid retriever...")
             get_hybrid_retriever()
-        except Exception:
-            pass  # Fail silently, will retry on first query
+            logger.info("Model pre-load complete")
+        except MemoryError:
+            logger.error("Out of memory during model pre-load - will retry on first query")
+        except Exception as e:
+            logger.error(f"Model pre-load failed: {e}")
     
     thread = threading.Thread(target=preload, daemon=True)
     thread.start()
@@ -131,8 +139,10 @@ async def query_notices(request: QueryRequest):
         ]
         
         return QueryResponse(response=response, sources=sources)
+    except MemoryError:
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable - model loading. Please retry in a few seconds.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
 
 @app.post("/v1/query/stream")
@@ -153,8 +163,10 @@ async def query_notices_stream(request: QueryRequest):
                 yield word
         
         return StreamingResponse(generate(), media_type="text/plain")
+    except MemoryError:
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable - model loading. Please retry in a few seconds.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
 
 @app.post("/v1/documents/upload")
